@@ -1,31 +1,53 @@
-# Smart-Bookmarks
+# Smart Bookmark App
 
-Smart bookmark manager built with Next.js and Supabase (Google OAuth).
+A bookmark manager built with Next.js, Supabase, and Tailwind CSS.
 
-## Setup
+## Live Demo
+https://smart-bookmarks-steel.vercel.app
 
-1) Install deps
+## Tech Stack
+- Next.js 14 (App Router)
+- Supabase (Auth, Database, Realtime)
+- Tailwind CSS
+- Vercel (Deployment)
 
-```bash
-npm install
+
+
+## Problems I Ran Into
+
+### Bookmarks Not Updating in Real-time
+**Problem:**
+After adding a bookmark it only appeared after
+refreshing the page. The Supabase real-time
+subscription was not reflecting the new bookmark
+in the UI instantly.
+
+**What I tried first:**
+Used the basic insert without getting data back:
+```js
+const { error } = await supabase
+  .from('bookmarks')
+  .insert([newBookmark])
 ```
+This saved to the database correctly but the
+UI did not update until the page was refreshed.
 
-2) Configure env vars
+**Solution:**
+Updated the `addBookmark` function to use `.select()`
+to get the inserted data back from Supabase and
+manually update the React state immediately:
+```js
+const { data, error } = await supabase
+  .from('bookmarks')
+  .insert([newBookmark])
+  .select()
 
-Create `.env.local` in the project root (see `.env.example`):
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-3) Run the dev server
-
-```bash
-npm run dev
+if (!error && data) {
+  setBookmarks(prev => [data[0], ...prev])
+  setTitle('')
+  setUrl('')
+}
 ```
+This way the UI updates instantly without waiting
+for the real-time subscription to fire.
 
-Open http://localhost:3000
-
-## Notes
-
-- If you add env vars while the dev server is running, fully restart `npm run dev` (and delete `.next` if it still doesn’t pick them up).
-- For cross-tab delete events via Supabase Realtime, consider enabling `REPLICA IDENTITY FULL` on the `bookmarks` table.
